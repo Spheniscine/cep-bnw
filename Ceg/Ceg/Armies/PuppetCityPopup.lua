@@ -61,6 +61,30 @@ PopupLayouts[ButtonPopupTypes.BUTTONPOPUP_CITY_CAPTURED] = function(popupInfo)
 		AddButton(buttonText, OnLiberateClicked, strToolTip);
 	end
 	
+	-- Initialize 'Annex' button. (NOTE: Code ported from vanilla to quickfix Iron Curtain issue.)
+	local iUnhappinessNoCity = activePlayer:GetUnhappiness();
+	local iUnhappinessAnnexedCity = activePlayer:GetUnhappinessForecast(newCity, nil);	-- pAssumeCityAnnexed, pAssumeCityPuppeted
+	if (bMinorCivBuyout) then
+		-- For minor civ buyout (Austria UA), there are no unhappiness benefits of annexing because the city is not occupied
+		iUnhappinessAnnexedCity = activePlayer:GetUnhappinessForecast(nil, newCity);
+	end
+	local iUnhappinessForAnnexing = iUnhappinessAnnexedCity - iUnhappinessNoCity;
+	
+	local OnCaptureClicked = function()
+		Network.SendDoTask(cityID, TaskTypes.TASK_ANNEX_PUPPET, -1, -1, false, false, false, false);
+		newCity:ChooseProduction();
+	end
+	
+	if (not activePlayer:MayNotAnnex()) then
+		local buttonText = Locale.ConvertTextKey("TXT_KEY_POPUP_ANNEX_CITY");
+		local strToolTip = Locale.ConvertTextKey("TXT_KEY_POPUP_CITY_CAPTURE_INFO_ANNEX", iUnhappinessForAnnexing);
+		if (newCity:GetOriginalOwner() ~= Game.GetActivePlayer() and bConquest == true) then
+			strToolTip = strToolTip .. "[NEWLINE][NEWLINE]"
+			strToolTip = strToolTip .. activePlayer:GetWarmongerPreviewString(iPreviousOwner);
+		end
+		AddButton(buttonText, OnCaptureClicked, strToolTip);
+	end
+	
 	-- Initialize 'Puppet' button.
 	local OnPuppetClicked = function()
 		Network.SendDoTask(cityID, TaskTypes.TASK_CREATE_PUPPET, -1, -1, false, false, false, false);
